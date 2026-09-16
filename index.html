@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#111318" />
+<meta name="theme-color" content="#101216" />
 <title>이수역 남측 횡단보도 신호</title>
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="apple-touch-icon" href="icons/icon-192.png" />
@@ -17,116 +17,161 @@
   * { box-sizing: border-box; }
   html, body {
     margin: 0;
-    height: 100%;
-    background: #111318;
-    color: #f5f5f7;
+    min-height: 100%;
+    background: #101216;
+    color: #f2f3f5;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
     overscroll-behavior: none;
   }
   #app {
-    min-height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 24px 16px;
-    text-align: center;
-    transition: background-color 0.4s ease;
-  }
-  #app[data-state="red"] { background: #7a1f1f; }
-  #app[data-state="green-steady"] { background: #145a32; }
-  #app[data-state="green-flash"] { background: #1f7a45; animation: flash 0.5s steps(2, jump-none) infinite; }
-  #app[data-state="unknown"] { background: #2b2d33; }
-
-  @keyframes flash {
-    50% { filter: brightness(1.35); }
-  }
-
-  #status-label {
-    font-size: clamp(20px, 5vw, 28px);
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    margin-bottom: 8px;
-  }
-  #countdown {
-    font-size: clamp(72px, 28vw, 200px);
-    font-weight: 800;
-    line-height: 1;
-    font-variant-numeric: tabular-nums;
-    margin: 8px 0 16px;
-  }
-  #countdown.hidden { display: none; }
-  #badge-row {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin-bottom: 20px;
-    min-height: 24px;
-  }
-  .badge {
-    font-size: 13px;
-    padding: 4px 10px;
-    border-radius: 999px;
-    background: rgba(255,255,255,0.15);
-  }
-  .badge.warn { background: #b8860b; color: #1a1a1a; font-weight: 700; }
-  .badge.danger { background: #ffd400; color: #1a1a1a; font-weight: 700; }
-
-  #meta {
-    font-size: 13px;
-    opacity: 0.75;
-    line-height: 1.6;
-    max-width: 420px;
-  }
-  #meta .row { margin: 2px 0; }
-  #cross-check { font-size: 12px; opacity: 0.6; margin-top: 6px; }
-
-  #big-warning {
-    font-size: clamp(20px, 6vw, 32px);
-    font-weight: 700;
-    color: #ffd400;
-    margin: 16px 0;
     max-width: 480px;
-    line-height: 1.4;
+    margin: 0 auto;
+    padding: 28px 20px 40px;
   }
-  #big-warning.hidden { display: none; }
 
   #controls {
-    position: fixed;
-    top: calc(env(safe-area-inset-top, 0px) + 10px);
-    right: 12px;
     display: flex;
-    gap: 8px;
+    justify-content: flex-end;
+    margin-bottom: 8px;
   }
   #controls button {
-    background: rgba(255,255,255,0.14);
+    background: rgba(255,255,255,0.10);
     color: inherit;
     border: none;
     border-radius: 10px;
-    padding: 8px 12px;
-    font-size: 13px;
+    padding: 7px 12px;
+    font-size: 12px;
     -webkit-tap-highlight-color: transparent;
   }
-  #controls button[aria-pressed="true"] { background: rgba(255,255,255,0.35); }
+  #controls button[aria-pressed="true"] { background: rgba(255,255,255,0.28); }
+
+  .now-full {
+    font-size: 15px;
+    color: #c7cad1;
+  }
+  .now-label {
+    font-size: 13px;
+    color: #8a8f99;
+    margin-top: 2px;
+  }
+  .now-big {
+    font-size: clamp(40px, 12vw, 56px);
+    font-weight: 800;
+    color: #f2994a;
+    line-height: 1.2;
+    margin-top: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+  #next-green-line {
+    font-size: clamp(17px, 5vw, 21px);
+    font-weight: 700;
+    margin-top: 10px;
+  }
+  #next-green-line.state-red { color: #f2f3f5; }
+  #next-green-line.state-green { color: #4ce07a; }
+  #next-green-line.state-unknown { color: #9aa0aa; }
+
+  #sync-note {
+    margin-top: 8px;
+    font-size: 12px;
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.10);
+    color: #c7cad1;
+  }
+  #sync-note.warn { background: #4a3a12; color: #ffd58a; }
+  #sync-note.danger { background: #4a1414; color: #ff9a9a; }
+
+  #big-warning {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #3a1414;
+    color: #ffb4b4;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  #big-warning.hidden { display: none; }
+
+  .divider {
+    border: none;
+    border-top: 1px solid rgba(255,255,255,0.14);
+    margin: 22px 0 18px;
+  }
+
+  .section-label {
+    font-size: 13px;
+    color: #9aa0aa;
+    margin-bottom: 10px;
+  }
+
+  #upcoming-list { display: flex; flex-direction: column; gap: 10px; }
+  #upcoming-empty {
+    font-size: 13px;
+    color: #8a8f99;
+  }
+  #upcoming-empty.hidden { display: none; }
+
+  .green-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #1a1d24;
+    border-left: 4px solid #f2994a;
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .green-row .row-time {
+    font-size: clamp(18px, 5vw, 21px);
+    font-weight: 700;
+  }
+  .green-row .row-rel {
+    font-size: 13px;
+    font-weight: 600;
+    opacity: 0.9;
+  }
+  .accent-0 { border-left-color: #f2994a; }
+  .accent-0 .row-time, .accent-0 .row-rel { color: #f2994a; }
+  .accent-1 { border-left-color: #27ae60; }
+  .accent-1 .row-time, .accent-1 .row-rel { color: #4ce07a; }
+  .accent-2 { border-left-color: #eb5757; }
+  .accent-2 .row-time, .accent-2 .row-rel { color: #ff8686; }
+
+  #meta {
+    margin-top: 26px;
+    font-size: 12px;
+    color: #7d818a;
+    line-height: 1.7;
+  }
+  #cross-check { margin-top: 2px; opacity: 0.85; }
 
   a { color: inherit; }
 </style>
 </head>
 <body>
-<div id="controls">
-  <button id="wake-toggle" aria-pressed="false" type="button">화면 유지: 꺼짐</button>
-</div>
+<div id="app">
+  <div id="controls">
+    <button id="wake-toggle" aria-pressed="false" type="button">화면 유지: 꺼짐</button>
+  </div>
 
-<div id="app" data-state="unknown">
-  <div id="status-label">신호 확인 중…</div>
-  <div id="countdown">--</div>
-  <div id="badge-row"></div>
+  <div class="now-full" id="now-full">-</div>
+  <div class="now-label">현재 시각</div>
+  <div class="now-big" id="now-big">--:--</div>
+  <div id="next-green-line" class="state-unknown">신호 확인 중…</div>
+  <div><span id="sync-note">연결 중…</span></div>
   <div id="big-warning" class="hidden"></div>
+
+  <hr class="divider" />
+
+  <div class="section-label">다가오는 초록불 <span id="upcoming-count">0</span>개</div>
+  <div id="upcoming-list"></div>
+  <div id="upcoming-empty" class="hidden">아직 신호 데이터를 받지 못했어요.</div>
+
   <div id="meta">
-    <div class="row" id="meta-datatime">데이터 시각: -</div>
-    <div class="row" id="meta-age">데이터 나이: -</div>
-    <div class="row" id="meta-source">출처: 서울시 T-Data C-ITS Open API (itstId 23251)</div>
+    <div id="meta-datatime">데이터 시각: -</div>
+    <div id="meta-age">데이터 나이: -</div>
+    <div id="meta-source">출처: 서울시 T-Data C-ITS Open API (itstId 23251)</div>
     <div id="cross-check"></div>
   </div>
 </div>
@@ -148,19 +193,20 @@
   const VEHICLE_FIELDS = ["ntStsg", "stStsg"]; // 교차 확인용(동작대로 차량 직진)
 
   const POLL_MS = 5000;
-  const RENDER_MS = 200;
+  const RENDER_MS = 1000; // 시계/카운트다운은 1초 단위로 충분
+  const UPCOMING_COUNT = 3; // 스케줄표에 보여줄 다가오는 초록불 개수
 
-  // 2026-09-14 16시대 관측값 기반 기본 위상 길이(초). 데이터가 끊겼을 때만
+  // 2026-09-14~15 관측값 기반 기본 위상 길이(초). 데이터가 끊겼을 때
   // 다음 전환을 예측하는 데 쓰인다 — 시간대별로 다를 수 있으니 실측이 오면
-  // 항상 실측이 우선한다. data/profile_23251.csv가 있으면 나중에 시간대별
-  // 값으로 정교화할 수 있다.
-  const GREEN_STEADY_SEC = 12; // protected-Movement-Allowed
+  // 항상 실측이 우선한다.
+  const GREEN_STEADY_SEC = 12; // protected-Movement-Allowed (점등)
   const GREEN_FLASH_SEC = 32; // permissive-Movement-Allowed (점멸)
   const RED_SEC = 176;
+  const CYCLE_SEC = GREEN_STEADY_SEC + GREEN_FLASH_SEC + RED_SEC; // 220초
 
-  const STALE_WARN_SEC = 30; // 이 이상이면 "예측" 배지
+  const STALE_WARN_SEC = 30; // 이 이상이면 "예측" 표시
   const STALE_HEAVY_SEC = 600; // 10분: 강한 경고
-  const STALE_HIDE_SEC = 1800; // 30분: 카운트다운 숨김
+  const STALE_HIDE_SEC = 1800; // 30분: 스케줄 숨기고 큰 경고
 
   const STAT_TO_PHASE = {
     "stop-And-Remain": "red",
@@ -170,45 +216,28 @@
     "permissive-clearance": "green-flash",
   };
 
-  const LABEL = {
-    red: "빨간불 (정지)",
-    "green-steady": "초록불 (보행 가능)",
-    "green-flash": "초록불 점멸 (곧 종료)",
-    unknown: "신호 확인 불가",
-  };
-
   // ── DOM ────────────────────────────────────────────────────────────
-  const appEl = document.getElementById("app");
-  const statusLabelEl = document.getElementById("status-label");
-  const countdownEl = document.getElementById("countdown");
-  const badgeRowEl = document.getElementById("badge-row");
+  const nowFullEl = document.getElementById("now-full");
+  const nowBigEl = document.getElementById("now-big");
+  const nextGreenLineEl = document.getElementById("next-green-line");
+  const syncNoteEl = document.getElementById("sync-note");
   const bigWarningEl = document.getElementById("big-warning");
+  const upcomingCountEl = document.getElementById("upcoming-count");
+  const upcomingListEl = document.getElementById("upcoming-list");
+  const upcomingEmptyEl = document.getElementById("upcoming-empty");
   const metaDataTimeEl = document.getElementById("meta-datatime");
   const metaAgeEl = document.getElementById("meta-age");
   const crossCheckEl = document.getElementById("cross-check");
   const wakeToggleBtn = document.getElementById("wake-toggle");
 
   // ── 상태 ───────────────────────────────────────────────────────────
-  // anchor: 마지막으로 "실측"한 전환 시각과 그때의 위상.
-  let anchor = null; // { phase, boundaryTime, dataTime, real: true }
+  // anchor: 마지막으로 "실측"한 신호 상태와 그 상태가 끝나는 절대 시각.
+  let anchor = null; // { phase, boundaryTime, dataTime }
   let lastRawSignals = {};
   let lastDataTime = null;
   let lastAdvanceAt = Date.now(); // dataTime이 마지막으로 "바뀐" 시각(피드 정지 감지용)
   let pollTimer = null;
   let wakeLock = null;
-
-  function phaseSequenceAfter(phase) {
-    if (phase === "red") return "green-steady";
-    if (phase === "green-steady") return "green-flash";
-    if (phase === "green-flash") return "red";
-    return "red";
-  }
-  function phaseDurationSec(phase) {
-    if (phase === "green-steady") return GREEN_STEADY_SEC;
-    if (phase === "green-flash") return GREEN_FLASH_SEC;
-    if (phase === "red") return RED_SEC;
-    return RED_SEC;
-  }
 
   function applyReading(signals, dataTime) {
     lastRawSignals = signals || {};
@@ -230,93 +259,182 @@
       return;
     }
     const boundaryTime = dataTime + (rmdr / 10) * 1000;
-    anchor = { phase, boundaryTime, dataTime, real: true };
+    anchor = { phase, boundaryTime, dataTime };
   }
 
-  // 현재 시각 기준 위상/잔여초/예측 여부를 계산.
-  function computeNow() {
+  // anchor를 기준으로 "다음 초록불이 시작되는 절대 시각"을 계산한다.
+  // 이미 초록불이면 지금 켜진 초록불이 아니라 "그 다음" 초록불 시작 시각을 준다.
+  function firstUpcomingGreenStart() {
+    if (!anchor) return null;
+    let start;
+    if (anchor.phase === "red") {
+      start = anchor.boundaryTime; // 빨강이 끝나는 시각 = 초록 시작
+    } else if (anchor.phase === "green-steady") {
+      const redStart = anchor.boundaryTime + GREEN_FLASH_SEC * 1000;
+      start = redStart + RED_SEC * 1000;
+    } else {
+      // green-flash: boundaryTime이 곧 적색 시작 시각
+      start = anchor.boundaryTime + RED_SEC * 1000;
+    }
+    // 데이터가 오래돼서 이미 지난 시각이면, 알려진 주기만큼 앞으로 밀어서
+    // 항상 "미래"의 다음 초록불이 되도록 한다.
     const now = Date.now();
-    if (!anchor) {
-      return { phase: "unknown", remainingSec: null, predicted: false };
+    if (start < now) {
+      const cyclesPassed = Math.ceil((now - start) / (CYCLE_SEC * 1000));
+      start += cyclesPassed * CYCLE_SEC * 1000;
     }
+    return start;
+  }
+
+  function computeUpcomingGreens(n) {
+    const first = firstUpcomingGreenStart();
+    if (first === null) return [];
+    const list = [];
+    for (let i = 0; i < n; i++) {
+      list.push(first + i * CYCLE_SEC * 1000);
+    }
+    return list;
+  }
+
+  // 현재 신호 위상(빨강/초록 점등/초록 점멸)과 그 상태가 끝날 때까지 남은 초.
+  function computeCurrentPhase() {
+    const now = Date.now();
+    if (!anchor) return { phase: "unknown", remainingSec: null };
     if (now <= anchor.boundaryTime) {
-      return {
-        phase: anchor.phase,
-        remainingSec: (anchor.boundaryTime - now) / 1000,
-        predicted: false,
-      };
+      return { phase: anchor.phase, remainingSec: (anchor.boundaryTime - now) / 1000 };
     }
-    // 경계를 지남 → 알려진 위상 길이로 순차 예측(전환마다 이어붙임)
-    let phase = phaseSequenceAfter(anchor.phase);
-    let boundary = anchor.boundaryTime + phaseDurationSec(phase) * 1000;
+    // 경계를 지남 → 순차적으로 다음 위상까지 진행시켜 현재 위상을 추정
+    const seq = { red: "green-steady", "green-steady": "green-flash", "green-flash": "red" };
+    const dur = { "green-steady": GREEN_STEADY_SEC, "green-flash": GREEN_FLASH_SEC, red: RED_SEC };
+    let phase = seq[anchor.phase] || "red";
+    let boundary = anchor.boundaryTime + dur[phase] * 1000;
     let guard = 0;
-    while (now > boundary && guard < 20) {
-      phase = phaseSequenceAfter(phase);
-      boundary += phaseDurationSec(phase) * 1000;
+    while (now > boundary && guard < 30) {
+      phase = seq[phase];
+      boundary += dur[phase] * 1000;
       guard++;
     }
-    return { phase, remainingSec: (boundary - now) / 1000, predicted: true };
+    return { phase, remainingSec: (boundary - now) / 1000 };
   }
 
-  function fmtTimeKST(ms) {
-    if (!ms) return "-";
-    try {
-      return new Date(ms).toLocaleTimeString("ko-KR", {
-        hour12: false,
-        timeZone: "Asia/Seoul",
-      });
-    } catch (e) {
-      return new Date(ms).toISOString();
-    }
+  function fmtNowFull(d) {
+    const weekday = d.toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul", weekday: "long" });
+    const time = d.toLocaleTimeString("ko-KR", {
+      timeZone: "Asia/Seoul",
+      hour: "numeric",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
+    return weekday + " " + time;
+  }
+  function fmtNowBig(d) {
+    return d.toLocaleTimeString("ko-KR", {
+      timeZone: "Asia/Seoul",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  }
+  function fmtClockShort(ms) {
+    return new Date(ms).toLocaleTimeString("ko-KR", {
+      timeZone: "Asia/Seoul",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  }
+  function fmtClockFull(ms) {
+    return new Date(ms).toLocaleTimeString("ko-KR", {
+      timeZone: "Asia/Seoul",
+      hour12: false,
+    });
+  }
+  function fmtRelative(deltaMs) {
+    const s = Math.max(0, Math.round(deltaMs / 1000));
+    if (s < 60) return s + "초 후";
+    const m = Math.floor(s / 60);
+    const remS = s % 60;
+    if (m < 60) return remS > 0 ? m + "분 " + remS + "초 후" : m + "분 후";
+    const h = Math.floor(m / 60);
+    const remM = m % 60;
+    return remM > 0 ? h + "시간 " + remM + "분 후" : h + "시간 후";
   }
 
   function render() {
     const now = Date.now();
+    const nowDate = new Date(now);
+    nowFullEl.textContent = fmtNowFull(nowDate);
+    nowBigEl.textContent = fmtNowBig(nowDate);
+
     const dataAgeSec = lastDataTime ? (now - lastDataTime) / 1000 : null;
     const feedGapSec = (now - lastAdvanceAt) / 1000; // 피드가 실제로 멈춘 시간
 
-    const badges = [];
-
-    if (feedGapSec >= STALE_HIDE_SEC) {
-      appEl.dataset.state = "unknown";
-      statusLabelEl.textContent = LABEL.unknown;
-      countdownEl.classList.add("hidden");
-      bigWarningEl.classList.remove("hidden");
-      bigWarningEl.textContent =
-        "신호 데이터가 30분 이상 갱신되지 않았습니다. 실제 신호와 다를 수 있으니 반드시 눈으로 확인하세요.";
-      badges.push(["danger", "갱신 중단"]);
+    // 동기화 상태 배지
+    syncNoteEl.classList.remove("warn", "danger");
+    if (!anchor) {
+      syncNoteEl.textContent = "연결 중…";
+    } else if (feedGapSec >= STALE_HEAVY_SEC) {
+      syncNoteEl.textContent = "⚠️ " + Math.round(feedGapSec / 60) + "분째 갱신 안 됨 (예측)";
+      syncNoteEl.classList.add("danger");
+    } else if (feedGapSec >= STALE_WARN_SEC) {
+      syncNoteEl.textContent = "예측 중 (데이터 " + Math.round(feedGapSec) + "초 전)";
+      syncNoteEl.classList.add("warn");
     } else {
-      bigWarningEl.classList.add("hidden");
-      const { phase, remainingSec, predicted } = computeNow();
-      appEl.dataset.state = phase;
-      statusLabelEl.textContent = LABEL[phase] || LABEL.unknown;
-
-      if (remainingSec === null) {
-        countdownEl.classList.add("hidden");
-      } else {
-        countdownEl.classList.remove("hidden");
-        countdownEl.textContent = Math.max(0, Math.ceil(remainingSec));
-      }
-
-      if (feedGapSec >= STALE_HEAVY_SEC) {
-        badges.push(["warn", "장시간 예측 (" + Math.round(feedGapSec / 60) + "분)"]);
-      } else if (predicted || feedGapSec >= STALE_WARN_SEC) {
-        badges.push(["", "예측"]);
-      } else {
-        badges.push(["", "실시간"]);
-      }
+      syncNoteEl.textContent = "실시간 연동됨";
     }
 
-    badgeRowEl.innerHTML = "";
-    badges.forEach(([cls, text]) => {
-      const span = document.createElement("span");
-      span.className = "badge" + (cls ? " " + cls : "");
-      span.textContent = text;
-      badgeRowEl.appendChild(span);
-    });
+    if (feedGapSec >= STALE_HIDE_SEC) {
+      bigWarningEl.classList.remove("hidden");
+      bigWarningEl.textContent =
+        "⚠️ 신호 데이터가 30분 이상 갱신되지 않았습니다. 아래 시간표는 정확하지 않을 수 있으니 실제 신호를 꼭 확인하세요.";
+    } else {
+      bigWarningEl.classList.add("hidden");
+    }
+
+    // 상단 "다음 초록불 / 지금 초록불" 문구
+    const { phase, remainingSec } = computeCurrentPhase();
+    nextGreenLineEl.classList.remove("state-red", "state-green", "state-unknown");
+    if (!anchor) {
+      nextGreenLineEl.textContent = "신호 확인 중…";
+      nextGreenLineEl.classList.add("state-unknown");
+    } else if (phase === "green-steady" || phase === "green-flash") {
+      nextGreenLineEl.textContent =
+        "지금 초록불이에요 · 종료까지 " + Math.max(0, Math.ceil(remainingSec)) + "초";
+      nextGreenLineEl.classList.add("state-green");
+    } else {
+      const firstStart = firstUpcomingGreenStart();
+      const rel = firstStart !== null ? fmtRelative(firstStart - now) : "계산 중";
+      nextGreenLineEl.textContent = "다음 초록불: " + rel;
+      nextGreenLineEl.classList.add("state-red");
+    }
+
+    // 다가오는 초록불 목록
+    const upcoming = computeUpcomingGreens(UPCOMING_COUNT);
+    upcomingCountEl.textContent = upcoming.length;
+    if (!upcoming.length) {
+      upcomingListEl.innerHTML = "";
+      upcomingEmptyEl.classList.remove("hidden");
+    } else {
+      upcomingEmptyEl.classList.add("hidden");
+      upcomingListEl.innerHTML = "";
+      upcoming.forEach((t, i) => {
+        const row = document.createElement("div");
+        row.className = "green-row accent-" + (i % 3);
+        const timeSpan = document.createElement("span");
+        timeSpan.className = "row-time";
+        timeSpan.textContent = fmtClockShort(t);
+        const relSpan = document.createElement("span");
+        relSpan.className = "row-rel";
+        relSpan.textContent = fmtRelative(t - now);
+        row.appendChild(timeSpan);
+        row.appendChild(relSpan);
+        upcomingListEl.appendChild(row);
+      });
+    }
 
     metaDataTimeEl.textContent =
-      "데이터 시각: " + (lastDataTime ? fmtTimeKST(lastDataTime) + " (KST)" : "-");
+      "데이터 시각: " + (lastDataTime ? fmtClockFull(lastDataTime) + " (KST)" : "-");
     metaAgeEl.textContent =
       "데이터 나이: " + (dataAgeSec !== null ? Math.round(dataAgeSec) + "초 전" : "-");
 
@@ -336,11 +454,9 @@
       if (!data.stale) {
         applyReading(data.signals || {}, data.dataTime);
       } else {
-        // stale이어도 마지막 값은 표시 대상이 되도록 서명 정보만 갱신
         lastRawSignals = data.signals || lastRawSignals;
       }
     } catch (e) {
-      // 네트워크 실패 시 아무것도 하지 않음 — 다음 폴링에서 재시도.
       console.warn("[signal] fetch failed", e);
     }
   }
@@ -361,6 +477,7 @@
       stopPolling();
     } else {
       startPolling();
+      poll();
     }
   });
 
@@ -399,15 +516,14 @@
     else enableWakeLock();
   });
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible" && wakeToggleBtn.getAttribute("aria-pressed") === "true" && !wakeLock) {
+    if (
+      document.visibilityState === "visible" &&
+      wakeToggleBtn.getAttribute("aria-pressed") === "true" &&
+      !wakeLock
+    ) {
       enableWakeLock();
     }
   });
-
-  if ("serviceWorker" in navigator) {
-    // 서비스워커는 아직 없음 — manifest만으로도 "홈 화면에 추가"는 가능.
-    // 오프라인 캐싱이 필요해지면 여기에 등록 추가.
-  }
 })();
 </script>
 </body>
