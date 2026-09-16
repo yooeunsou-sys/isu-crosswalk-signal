@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#111318" />
+<title>이수역 남측 횡단보도 신호</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<link rel="icon" href="icons/icon-192.png" />
+<style>
+  :root {
+    color-scheme: dark;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #111318;
+    color: #f5f5f7;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
+    overscroll-behavior: none;
+  }
+  #app {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    text-align: center;
+    transition: background-color 0.4s ease;
+  }
+  #app[data-state="red"] { background: #7a1f1f; }
+  #app[data-state="green-steady"] { background: #145a32; }
+  #app[data-state="green-flash"] { background: #1f7a45; animation: flash 0.5s steps(2, jump-none) infinite; }
+  #app[data-state="unknown"] { background: #2b2d33; }
+
+  @keyframes flash {
+    50% { filter: brightness(1.35); }
+  }
+
+  #status-label {
+    font-size: clamp(20px, 5vw, 28px);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    margin-bottom: 8px;
+  }
+  #countdown {
+    font-size: clamp(72px, 28vw, 200px);
+    font-weight: 800;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    margin: 8px 0 16px;
+  }
+  #countdown.hidden { display: none; }
+  #badge-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 20px;
+    min-height: 24px;
+  }
+  .badge {
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.15);
+  }
+  .badge.warn { background: #b8860b; color: #1a1a1a; font-weight: 700; }
+  .badge.danger { background: #ffd400; color: #1a1a1a; font-weight: 700; }
+
+  #meta {
+    font-size: 13px;
+    opacity: 0.75;
+    line-height: 1.6;
+    max-width: 420px;
+  }
+  #meta .row { margin: 2px 0; }
+  #cross-check { font-size: 12px; opacity: 0.6; margin-top: 6px; }
+
+  #big-warning {
+    font-size: clamp(20px, 6vw, 32px);
+    font-weight: 700;
+    color: #ffd400;
+    margin: 16px 0;
+    max-width: 480px;
+    line-height: 1.4;
+  }
+  #big-warning.hidden { display: none; }
+
+  #controls {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 10px);
+    right: 12px;
+    display: flex;
+    gap: 8px;
+  }
+  #controls button {
+    background: rgba(255,255,255,0.14);
+    color: inherit;
+    border: none;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 13px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #controls button[aria-pressed="true"] { background: rgba(255,255,255,0.35); }
+
+  a { color: inherit; }
+</style>
+</head>
+<body>
+<div id="controls">
+  <button id="wake-toggle" aria-pressed="false" type="button">화면 유지: 꺼짐</button>
+</div>
+
+<div id="app" data-state="unknown">
+  <div id="status-label">신호 확인 중…</div>
+  <div id="countdown">--</div>
+  <div id="badge-row"></div>
+  <div id="big-warning" class="hidden"></div>
+  <div id="meta">
+    <div class="row" id="meta-datatime">데이터 시각: -</div>
+    <div class="row" id="meta-age">데이터 나이: -</div>
+    <div class="row" id="meta-source">출처: 서울시 T-Data C-ITS Open API (itstId 23251)</div>
+    <div id="cross-check"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ── 설정 ────────────────────────────────────────────────────────────
+  // Cloudflare Worker 배포 후 실제 주소로 바꿀 것 (끝에 슬래시 없이).
+  const WORKER_BASE = "https://isu-crosswalk-signal.<ACCOUNT>.workers.dev";
+  const SIGNAL_URL = WORKER_BASE + "/signal";
+
+  // 사용자 집 앞 횡단보도(동작대로 횡단) 보행 필드.
+  // 2026-09-14 시퀀스 분석으로 wtPdsg로 잠정 확정했으나 현장 대조 전까지는 "잠정".
+  // 현장에서 실제 신호와 다르면 이 값을 "stPdsg"로 바꾸면 된다.
+  const PRIMARY_FIELD = "wtPdsg";
+  const SECONDARY_FIELD = "stPdsg"; // 교차 확인용(동쪽 부도로 횡단으로 추정)
+  const VEHICLE_FIELDS = ["ntStsg", "stStsg"]; // 교차 확인용(동작대로 차량 직진)
+
+  const POLL_MS = 5000;
+  const RENDER_MS = 200;
+
+  // 2026-09-14 16시대 관측값 기반 기본 위상 길이(초). 데이터가 끊겼을 때만
+  // 다음 전환을 예측하는 데 쓰인다 — 시간대별로 다를 수 있으니 실측이 오면
+  // 항상 실측이 우선한다. data/profile_23251.csv가 있으면 나중에 시간대별
+  // 값으로 정교화할 수 있다.
+  const GREEN_STEADY_SEC = 12; // protected-Movement-Allowed
+  const GREEN_FLASH_SEC = 32; // permissive-Movement-Allowed (점멸)
+  const RED_SEC = 176;
+
+  const STALE_WARN_SEC = 30; // 이 이상이면 "예측" 배지
+  const STALE_HEAVY_SEC = 600; // 10분: 강한 경고
+  const STALE_HIDE_SEC = 1800; // 30분: 카운트다운 숨김
+
+  const STAT_TO_PHASE = {
+    "stop-And-Remain": "red",
+    "protected-Movement-Allowed": "green-steady",
+    "permissive-Movement-Allowed": "green-flash",
+    "protected-clearance": "green-flash",
+    "permissive-clearance": "green-flash",
+  };
+
+  const LABEL = {
+    red: "빨간불 (정지)",
+    "green-steady": "초록불 (보행 가능)",
+    "green-flash": "초록불 점멸 (곧 종료)",
+    unknown: "신호 확인 불가",
+  };
+
+  // ── DOM ────────────────────────────────────────────────────────────
+  const appEl = document.getElementById("app");
+  const statusLabelEl = document.getElementById("status-label");
+  const countdownEl = document.getElementById("countdown");
+  const badgeRowEl = document.getElementById("badge-row");
+  const bigWarningEl = document.getElementById("big-warning");
+  const metaDataTimeEl = document.getElementById("meta-datatime");
+  const metaAgeEl = document.getElementById("meta-age");
+  const crossCheckEl = document.getElementById("cross-check");
+  const wakeToggleBtn = document.getElementById("wake-toggle");
+
+  // ── 상태 ───────────────────────────────────────────────────────────
+  // anchor: 마지막으로 "실측"한 전환 시각과 그때의 위상.
+  let anchor = null; // { phase, boundaryTime, dataTime, real: true }
+  let lastRawSignals = {};
+  let lastDataTime = null;
+  let lastAdvanceAt = Date.now(); // dataTime이 마지막으로 "바뀐" 시각(피드 정지 감지용)
+  let pollTimer = null;
+  let wakeLock = null;
+
+  function phaseSequenceAfter(phase) {
+    if (phase === "red") return "green-steady";
+    if (phase === "green-steady") return "green-flash";
+    if (phase === "green-flash") return "red";
+    return "red";
+  }
+  function phaseDurationSec(phase) {
+    if (phase === "green-steady") return GREEN_STEADY_SEC;
+    if (phase === "green-flash") return GREEN_FLASH_SEC;
+    if (phase === "red") return RED_SEC;
+    return RED_SEC;
+  }
+
+  function applyReading(signals, dataTime) {
+    lastRawSignals = signals || {};
+    if (dataTime && dataTime !== lastDataTime) {
+      lastDataTime = dataTime;
+      lastAdvanceAt = Date.now();
+    }
+
+    const statName = signals[PRIMARY_FIELD + "StatNm"];
+    const rmdr = signals[PRIMARY_FIELD + "RmdrCs"]; // 0.1초 단위
+
+    if (!statName || rmdr === undefined || rmdr === null || !dataTime) {
+      anchor = null;
+      return;
+    }
+    const phase = STAT_TO_PHASE[statName] || "unknown";
+    if (phase === "unknown") {
+      anchor = null;
+      return;
+    }
+    const boundaryTime = dataTime + (rmdr / 10) * 1000;
+    anchor = { phase, boundaryTime, dataTime, real: true };
+  }
+
+  // 현재 시각 기준 위상/잔여초/예측 여부를 계산.
+  function computeNow() {
+    const now = Date.now();
+    if (!anchor) {
+      return { phase: "unknown", remainingSec: null, predicted: false };
+    }
+    if (now <= anchor.boundaryTime) {
+      return {
+        phase: anchor.phase,
+        remainingSec: (anchor.boundaryTime - now) / 1000,
+        predicted: false,
+      };
+    }
+    // 경계를 지남 → 알려진 위상 길이로 순차 예측(전환마다 이어붙임)
+    let phase = phaseSequenceAfter(anchor.phase);
+    let boundary = anchor.boundaryTime + phaseDurationSec(phase) * 1000;
+    let guard = 0;
+    while (now > boundary && guard < 20) {
+      phase = phaseSequenceAfter(phase);
+      boundary += phaseDurationSec(phase) * 1000;
+      guard++;
+    }
+    return { phase, remainingSec: (boundary - now) / 1000, predicted: true };
+  }
+
+  function fmtTimeKST(ms) {
+    if (!ms) return "-";
+    try {
+      return new Date(ms).toLocaleTimeString("ko-KR", {
+        hour12: false,
+        timeZone: "Asia/Seoul",
+      });
+    } catch (e) {
+      return new Date(ms).toISOString();
+    }
+  }
+
+  function render() {
+    const now = Date.now();
+    const dataAgeSec = lastDataTime ? (now - lastDataTime) / 1000 : null;
+    const feedGapSec = (now - lastAdvanceAt) / 1000; // 피드가 실제로 멈춘 시간
+
+    const badges = [];
+
+    if (feedGapSec >= STALE_HIDE_SEC) {
+      appEl.dataset.state = "unknown";
+      statusLabelEl.textContent = LABEL.unknown;
+      countdownEl.classList.add("hidden");
+      bigWarningEl.classList.remove("hidden");
+      bigWarningEl.textContent =
+        "신호 데이터가 30분 이상 갱신되지 않았습니다. 실제 신호와 다를 수 있으니 반드시 눈으로 확인하세요.";
+      badges.push(["danger", "갱신 중단"]);
+    } else {
+      bigWarningEl.classList.add("hidden");
+      const { phase, remainingSec, predicted } = computeNow();
+      appEl.dataset.state = phase;
+      statusLabelEl.textContent = LABEL[phase] || LABEL.unknown;
+
+      if (remainingSec === null) {
+        countdownEl.classList.add("hidden");
+      } else {
+        countdownEl.classList.remove("hidden");
+        countdownEl.textContent = Math.max(0, Math.ceil(remainingSec));
+      }
+
+      if (feedGapSec >= STALE_HEAVY_SEC) {
+        badges.push(["warn", "장시간 예측 (" + Math.round(feedGapSec / 60) + "분)"]);
+      } else if (predicted || feedGapSec >= STALE_WARN_SEC) {
+        badges.push(["", "예측"]);
+      } else {
+        badges.push(["", "실시간"]);
+      }
+    }
+
+    badgeRowEl.innerHTML = "";
+    badges.forEach(([cls, text]) => {
+      const span = document.createElement("span");
+      span.className = "badge" + (cls ? " " + cls : "");
+      span.textContent = text;
+      badgeRowEl.appendChild(span);
+    });
+
+    metaDataTimeEl.textContent =
+      "데이터 시각: " + (lastDataTime ? fmtTimeKST(lastDataTime) + " (KST)" : "-");
+    metaAgeEl.textContent =
+      "데이터 나이: " + (dataAgeSec !== null ? Math.round(dataAgeSec) + "초 전" : "-");
+
+    const sec = lastRawSignals[SECONDARY_FIELD + "StatNm"];
+    const veh = VEHICLE_FIELDS.map((f) => lastRawSignals[f + "StatNm"]).filter(Boolean);
+    const parts = [];
+    if (sec) parts.push(SECONDARY_FIELD + ": " + sec);
+    if (veh.length) parts.push("차량: " + veh.join(" / "));
+    crossCheckEl.textContent = parts.length ? "(참고) " + parts.join(" · ") : "";
+  }
+
+  // ── 폴링 ───────────────────────────────────────────────────────────
+  async function poll() {
+    try {
+      const res = await fetch(SIGNAL_URL, { cache: "no-store" });
+      const data = await res.json();
+      if (!data.stale) {
+        applyReading(data.signals || {}, data.dataTime);
+      } else {
+        // stale이어도 마지막 값은 표시 대상이 되도록 서명 정보만 갱신
+        lastRawSignals = data.signals || lastRawSignals;
+      }
+    } catch (e) {
+      // 네트워크 실패 시 아무것도 하지 않음 — 다음 폴링에서 재시도.
+      console.warn("[signal] fetch failed", e);
+    }
+  }
+
+  function startPolling() {
+    if (pollTimer) return;
+    poll();
+    pollTimer = setInterval(poll, POLL_MS);
+  }
+  function stopPolling() {
+    if (!pollTimer) return;
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      stopPolling();
+    } else {
+      startPolling();
+    }
+  });
+
+  setInterval(render, RENDER_MS);
+  startPolling();
+  render();
+
+  // ── Wake Lock (화면 꺼짐 방지) ─────────────────────────────────────
+  async function enableWakeLock() {
+    try {
+      if (!("wakeLock" in navigator)) {
+        wakeToggleBtn.textContent = "화면 유지: 미지원";
+        return;
+      }
+      wakeLock = await navigator.wakeLock.request("screen");
+      wakeToggleBtn.setAttribute("aria-pressed", "true");
+      wakeToggleBtn.textContent = "화면 유지: 켜짐";
+      wakeLock.addEventListener("release", () => {
+        wakeToggleBtn.setAttribute("aria-pressed", "false");
+        wakeToggleBtn.textContent = "화면 유지: 꺼짐";
+      });
+    } catch (e) {
+      console.warn("[wakelock]", e);
+    }
+  }
+  function disableWakeLock() {
+    if (wakeLock) {
+      wakeLock.release().catch(() => {});
+      wakeLock = null;
+    }
+    wakeToggleBtn.setAttribute("aria-pressed", "false");
+    wakeToggleBtn.textContent = "화면 유지: 꺼짐";
+  }
+  wakeToggleBtn.addEventListener("click", () => {
+    if (wakeLock) disableWakeLock();
+    else enableWakeLock();
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && wakeToggleBtn.getAttribute("aria-pressed") === "true" && !wakeLock) {
+      enableWakeLock();
+    }
+  });
+
+  if ("serviceWorker" in navigator) {
+    // 서비스워커는 아직 없음 — manifest만으로도 "홈 화면에 추가"는 가능.
+    // 오프라인 캐싱이 필요해지면 여기에 등록 추가.
+  }
+})();
+</script>
+</body>
+</html>

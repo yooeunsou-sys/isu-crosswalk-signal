@@ -1,0 +1,7 @@
+name = "isu-crosswalk-signal"
+main = "index.js"
+compatibility_date = "2026-09-15"
+
+# API 키는 여기 넣지 않는다. 배포 전에 아래 명령으로 시크릿으로 등록:
+#   wrangler secret put TDATA_API_KEY
+# 값 입력 프롬프트가 뜨면 HANDOFF.md의 키를 붙여넣는다.
