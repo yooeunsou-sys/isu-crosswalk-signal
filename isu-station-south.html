@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#101216" />
-<title>이수역 남쪽 횡단보도 신호</title>
+<title>이수역 동/서 횡단보도 신호</title>
 <link rel="manifest" href="manifest-isu.webmanifest" />
 <link rel="apple-touch-icon" href="icons/icon-192.png" />
 <link rel="icon" href="icons/icon-192.png" />
@@ -171,14 +171,14 @@
     <button id="wake-toggle" aria-pressed="false" type="button">화면 유지: 꺼짐</button>
   </div>
 
-  <div class="page-title">이수역 사거리 · 남쪽 횡단보도</div>
+  <div class="page-title">이수역 사거리 · 동/서 횡단보도</div>
 
   <div class="now-full" id="now-full">-</div>
   <div class="now-label">현재 시각</div>
   <div class="now-big" id="now-big">--:--</div>
   <div id="next-green-line" class="state-unknown">신호 확인 중…</div>
   <div><span id="sync-note">연결 중…</span></div>
-  <div id="calib-note">⚠️ 이 위치는 아직 신호 주기가 실측되지 않았어요. 실시간 데이터가 있을 땐 정확하지만, 데이터가 잠깐 끊기면 다른 교차로(23251)에서 관측한 값(초록 44초/빨강 176초)으로 임시 추정해요. 며칠 사용해보면서 실제 주기를 확인하면 더 정확해질 수 있어요.</div>
+  <div id="calib-note">⚠️ 남/북 축(nt/st)이 실제 횡단보도와 안 맞아서 동/서 축(et/wt)으로 바꿔봤어요 — 아직 현장 대조로 확정된 건 아니니 실제 신호와 꼭 비교해보세요. 이 위치는 신호 주기도 아직 실측되지 않아서, 실시간 데이터가 있을 땐 정확하지만 데이터가 잠깐 끊기면 다른 교차로(23251)에서 관측한 값(초록 44초/빨강 176초)으로 임시 추정해요.</div>
   <div id="big-warning" class="hidden"></div>
 
   <hr class="divider" />
@@ -203,12 +203,13 @@
   const WORKER_BASE = "https://isu-crosswalk-signal.yooeunsou-isu.workers.dev";
   const SIGNAL_URL = WORKER_BASE + "/signal-isu";
 
-  // 이수역 사거리 남쪽 횡단보도. T-Data 방향 표기는 nt(북)/et(동)/st(남)/wt(서).
-  // nt와 st는 서로 같은 타이밍으로 움직이는 짝(마주보는 횡단보도)이라
-  // 정확히 "남쪽"이 아니어도 실질적으로 같은 값이 나온다.
-  const PRIMARY_FIELD = "stPdsg";
-  const SECONDARY_FIELD = "ntPdsg"; // 교차 확인용(마주보는 북쪽 횡단보도, 보통 동일하게 움직임)
-  const VEHICLE_FIELDS = ["ntStsg", "stStsg"]; // 교차 확인용(같은 축 차량 직진)
+  // 이수역 사거리 동/서 횡단보도. T-Data 방향 표기는 nt(북)/et(동)/st(남)/wt(서).
+  // 처음엔 st(남)로 만들었는데 현장 대조 결과 안 맞아서 et/wt 축으로 교체.
+  // et와 wt는 서로 같은 타이밍으로 움직이는 짝(마주보는 횡단보도)이라
+  // 정확히 어느 쪽인지 몰라도 값은 동일하게 나온다.
+  const PRIMARY_FIELD = "wtPdsg";
+  const SECONDARY_FIELD = "etPdsg"; // 교차 확인용(마주보는 동쪽 횡단보도, 보통 동일하게 움직임)
+  const VEHICLE_FIELDS = ["etStsg", "wtStsg"]; // 교차 확인용(같은 축 차량 직진)
 
   const POLL_MS = 5000;
   const RENDER_MS = 1000;

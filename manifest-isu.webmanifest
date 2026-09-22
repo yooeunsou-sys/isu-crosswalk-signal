@@ -1,7 +1,7 @@
 {
-  "name": "이수역 남쪽 횡단보도 신호",
+  "name": "이수역 동/서 횡단보도 신호",
   "short_name": "이수역 신호",
-  "description": "이수역 사거리 남쪽 횡단보도 실시간 보행 신호",
+  "description": "이수역 사거리 동/서 횡단보도 실시간 보행 신호",
   "start_url": "isu-station-south.html",
   "scope": ".",
   "display": "standalone",
