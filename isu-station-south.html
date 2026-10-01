@@ -269,13 +269,13 @@
     const statName = signals[PRIMARY_FIELD + "StatNm"];
     const rmdr = signals[PRIMARY_FIELD + "RmdrCs"];
 
+    // 이번 polling에 PRIMARY_FIELD가 빠져 있어도(V2X가 매번 전체 필드를 다
+    // 보내지 않음) 신호가 끊긴 게 아니므로 이전 anchor를 유지한 채 리턴한다.
     if (!statName || rmdr === undefined || rmdr === null || !dataTime) {
-      anchor = null;
       return;
     }
     const phase = STAT_TO_PHASE[statName] || "unknown";
     if (phase === "unknown") {
-      anchor = null;
       return;
     }
     const boundaryTime = dataTime + (rmdr / 10) * 1000;

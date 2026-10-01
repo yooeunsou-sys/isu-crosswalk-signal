@@ -249,13 +249,16 @@
     const statName = signals[PRIMARY_FIELD + "StatNm"];
     const rmdr = signals[PRIMARY_FIELD + "RmdrCs"]; // 0.1초 단위
 
+    // V2X 신호 메시지는 매번 모든 필드를 다 보내지 않고, 일부 방향 필드만
+    // 돌아가면서 실어 보낸다. 이번 polling에 우리가 보는 필드(PRIMARY_FIELD)가
+    // 빠져 있다고 해서 신호가 끊긴 건 아니므로, 이전에 확보한 anchor를 그대로
+    // 유지한 채 조용히 리턴한다 (전체 피드가 멈췄는지는 render()의
+    // feedGapSec/STALE_* 로직이 별도로 판단한다).
     if (!statName || rmdr === undefined || rmdr === null || !dataTime) {
-      anchor = null;
       return;
     }
     const phase = STAT_TO_PHASE[statName] || "unknown";
     if (phase === "unknown") {
-      anchor = null;
       return;
     }
     const boundaryTime = dataTime + (rmdr / 10) * 1000;
