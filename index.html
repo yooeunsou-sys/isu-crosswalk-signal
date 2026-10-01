@@ -62,6 +62,15 @@
     margin-top: 2px;
     font-variant-numeric: tabular-nums;
   }
+  #calib-note {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #ffd58a;
+    background: #3a2f12;
+    border-radius: 10px;
+    padding: 10px 12px;
+    line-height: 1.5;
+  }
   #next-green-line {
     font-size: clamp(17px, 5vw, 21px);
     font-weight: 700;
@@ -160,6 +169,7 @@
   <div class="now-big" id="now-big">--:--</div>
   <div id="next-green-line" class="state-unknown">신호 확인 중…</div>
   <div><span id="sync-note">연결 중…</span></div>
+  <div id="calib-note">⚠️ 원래 쓰던 wtPdsg 필드가 실시간 데이터에 계속 안 잡혀서(이 교차로가 더 이상 그 값을 안 보내는 것으로 보임) etPdsg 축으로 바꿔봤어요 — 아직 현장 대조로 확정된 건 아니니 실제 신호와 꼭 비교해보세요.</div>
   <div id="big-warning" class="hidden"></div>
 
   <hr class="divider" />
@@ -186,10 +196,13 @@
   const SIGNAL_URL = WORKER_BASE + "/signal";
 
   // 사용자 집 앞 횡단보도(동작대로 횡단) 보행 필드.
-  // 2026-09-14 시퀀스 분석으로 wtPdsg로 잠정 확정했으나 현장 대조 전까지는 "잠정".
-  // 현장에서 실제 신호와 다르면 이 값을 "stPdsg"로 바꾸면 된다.
-  const PRIMARY_FIELD = "wtPdsg";
-  const SECONDARY_FIELD = "stPdsg"; // 교차 확인용(동쪽 부도로 횡단으로 추정)
+  // 2026-09-14 시퀀스 분석으로 wtPdsg로 잠정 확정했었으나, 2026-10-01 확인 결과
+  // 이 교차로의 실시간 데이터에 wtPdsg/stPdsg 필드가 전혀 잡히지 않고(45초 이상
+  // 반복 확인) etPdsg만 꾸준히 들어오는 것을 확인 — 방송 패턴이 바뀐 것으로 보여
+  // etPdsg로 바꿨다. 현장 대조 전까지는 "잠정"이며, 실제 신호와 다르면 아래 값을
+  // 바꾸면 된다.
+  const PRIMARY_FIELD = "etPdsg";
+  const SECONDARY_FIELD = "wtPdsg"; // 교차 확인용(서쪽, 들어오면 보통 etPdsg와 반대로 움직임)
   const VEHICLE_FIELDS = ["ntStsg", "stStsg"]; // 교차 확인용(동작대로 차량 직진)
 
   const POLL_MS = 5000;
